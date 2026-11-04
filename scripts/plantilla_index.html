@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaply · Simulador de Matchmaking</title>
+<style>
+  :root {
+    --bg: #0e1117; --panel: #161b22; --panel2: #1c2129; --border: #2d3748;
+    --text: #e6edf3; --muted: #8b949e; --accent: #ff4b6e; --accent2: #4ba3ff;
+    --ok: #2ea043; --err: #ff7b72;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text); line-height: 1.5;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .layout { display: flex; min-height: 100vh; align-items: stretch; }
+
+  /* ---------- Sidebar / formulario ---------- */
+  .sidebar {
+    width: 350px; flex-shrink: 0; background: var(--panel);
+    border-right: 1px solid var(--border); padding: 26px 22px;
+  }
+  .sidebar h2 { margin: 0 0 18px; font-size: 1.15rem; }
+  .campo { margin-bottom: 16px; }
+  .campo label { display: block; font-size: .82rem; color: var(--muted); margin-bottom: 6px; }
+  .campo label .contador { float: right; color: var(--text); font-weight: 600; }
+  .campo label .contador.sobra { color: var(--err); }
+  input[type=text], select {
+    width: 100%; padding: 9px 12px; border-radius: 8px; font-size: .95rem;
+    background: var(--bg); color: var(--text); border: 1px solid var(--border); outline: none;
+  }
+  input[type=text]:focus, select:focus { border-color: var(--accent2); }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    border: 1px solid var(--border); background: transparent; color: var(--text);
+    border-radius: 999px; padding: 5px 13px; font-size: .85rem; cursor: pointer;
+    transition: all .15s ease;
+  }
+  .chip:hover { border-color: var(--accent2); }
+  .chip.sel { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .error { color: var(--err); font-size: .85rem; min-height: 1.1em; margin: 4px 0 10px; }
+  #buscar {
+    width: 100%; padding: 11px; border: none; border-radius: 8px; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), #ff7a45); color: #fff;
+    font-size: 1rem; font-weight: 700; transition: filter .15s ease;
+  }
+  #buscar:hover { filter: brightness(1.1); }
+  #buscar:disabled { opacity: .6; cursor: wait; }
+  .ruta { color: var(--muted); font-size: .74rem; margin-top: 16px; word-break: break-all; }
+  .ruta code { color: var(--accent2); }
+
+  /* ---------- Zona principal ---------- */
+  .main { flex: 1; padding: 30px clamp(16px, 4vw, 48px); max-width: 1150px; }
+  h1 { margin: 0 0 4px; font-size: clamp(1.5rem, 3vw, 2.1rem); }
+  .sub { color: var(--muted); margin: 0 0 8px; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 26px 0; }
+
+  .info, .aviso {
+    border: 1px solid var(--border); background: var(--panel); border-radius: 10px;
+    padding: 14px 18px; margin: 18px 0; font-size: .95rem;
+  }
+  .aviso { border-color: #d29922; color: #e3b341; background: #201a08; }
+  details.como { margin-top: 14px; }
+  details.como summary { cursor: pointer; color: var(--accent2); font-weight: 600; }
+  details.como ol { color: var(--muted); padding-left: 20px; }
+  details.como b, details.como code { color: var(--text); }
+
+  /* ---------- Métricas ---------- */
+  .metricas { display: flex; flex-wrap: wrap; gap: 14px; margin: 18px 0; }
+  .metrica {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 20px; min-width: 150px;
+  }
+  .metrica .k { font-size: .75rem; color: var(--muted); }
+  .metrica .v { font-size: 1.7rem; font-weight: 700; }
+
+  /* ---------- Tarjetas ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+  .tarjeta {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .tarjeta .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .tarjeta h3 { margin: 0; font-size: 1.15rem; }
+  .tarjeta .meta { color: var(--muted); font-size: .85rem; margin: 2px 0 10px; }
+  .tarjeta .pct { font-size: 1.5rem; font-weight: 800; color: var(--accent); text-align: right; }
+  .track { background: var(--panel2); border-radius: 999px; height: 8px; overflow: hidden; }
+  .fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+  .comunes { margin: 12px 0 6px; font-size: .9rem; }
+  .comunes b { font-weight: 700; }
+  .comunes code {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 1px 7px; margin-right: 5px; color: #7ee787; font-size: .82rem;
+  }
+  .perfillist { color: var(--muted); font-size: .78rem; }
+
+  /* ---------- Tabla ---------- */
+  details.tabla { margin-top: 22px; }
+  details.tabla summary { cursor: pointer; color: var(--accent2); font-weight: 600; margin-bottom: 10px; }
+  .scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { background: var(--panel2); color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; }
+  tr:last-child td { border-bottom: none; }
+  td.prob { font-weight: 700; color: #7ee787; }
+  tbody tr:nth-child(even) { background: rgba(255,255,255,.02); }
+
+  .nota { color: var(--muted); font-size: .85rem; margin-top: 14px; }
+  footer { color: var(--muted); font-size: .78rem; margin-top: 40px; border-top: 1px solid var(--border); padding-top: 14px; }
+
+  @media (max-width: 860px) {
+    .layout { flex-direction: column; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===================== FORMULARIO ===================== -->
+  <aside class="sidebar">
+    <h2>👤 Usuario nuevo</h2>
+
+    <div class="campo">
+      <label for="nombre">Nombre</label>
+      <input type="text" id="nombre" placeholder="Ej. Valentina Rojas" autocomplete="off">
+    </div>
+
+    <div class="campo">
+      <label for="universidad">Universidad</label>
+      <select id="universidad"></select>
+    </div>
+
+    <div class="campo">
+      <label for="carrera">Carrera</label>
+      <select id="carrera"></select>
+    </div>
+
+    <div class="campo">
+      <label>Intereses <span class="contador" id="contador">0/5</span></label>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div class="error" id="error"></div>
+    <button id="buscar">🔍 Buscar Matches</button>
+
+    <p class="ruta">
+      Base de datos: <code>data/raw/perfiles_crudos.csv</code> ·
+      Modelo: <code>models/modelo_matchmaking_gaply.pkl</code><br>
+      Las opciones se cargan dinámicamente desde el CSV.
+    </p>
+  </aside>
+
+  <!-- ===================== RESULTADOS ===================== -->
+  <main class="main">
+    <h1>💘 Gaply · Simulador de Matchmaking</h1>
+    <p class="sub">
+      Inferencia en vivo sobre <b id="nPerfiles">2.500</b> perfiles con el modelo
+      <b>Random Forest congelado</b> (Min-Max + predict_proba), ejecutándose
+      <b>100% en tu navegador</b> — sin servidor ni dependencias.
+    </p>
+
+    <div id="inicio">
+      <div class="info">
+        Completa tus datos en la lateral y pulsa <b>🔍 Buscar Matches</b> para
+        compararte contra la base de 2.500 perfiles.
+      </div>
+      <details class="como">
+        <summary>ℹ️ ¿Cómo funciona este simulador?</summary>
+        <ol>
+          <li><b>Cargas tus datos</b> (universidad, carrera y 3–5 intereses).</li>
+          <li><b>Comparación vectorizada</b>: se generan 4 features por perfil —
+            <code>misma_universidad</code>, <code>misma_carrera</code>,
+            <code>intereses_en_comun</code> y <code>similitud_jaccard</code>
+            (intersección / unión) — sin bucles fila a fila.</li>
+          <li><b>Modelo congelado</b>: las 4 columnas pasan por el
+            <code>MinMaxScaler</code> guardado y por <code>predict_proba()</code>
+            del modelo entrenado en Colab (embebido en este archivo como JSON:
+            100 árboles de profundidad ≤ 6).</li>
+          <li><b>Filtrado</b>: se muestran los perfiles con <b>≥ 65%</b> de
+            probabilidad de match, de mayor a menor. Si nadie llega al umbral,
+            se muestran los <b>top 5 absolutos</b>.</li>
+        </ol>
+      </details>
+    </div>
+
+    <div id="resultados" hidden>
+      <hr>
+      <h2 id="tituloResultados" style="margin:0"></h2>
+
+      <div class="metricas">
+        <div class="metrica"><div class="k">Perfiles evaluados</div><div class="v" id="mEval">—</div></div>
+        <div class="metrica"><div class="k">Matches ≥ 65%</div><div class="v" id="mMatches">—</div></div>
+        <div class="metrica"><div class="k">Mejor probabilidad</div><div class="v" id="mMejor">—</div></div>
+        <div class="metrica"><div class="k">Umbral</div><div class="v" id="mUmbral">65%</div></div>
+      </div>
+
+      <div id="avisoFallback" class="aviso" hidden></div>
+
+      <div class="grid" id="grid"></div>
+      <p class="nota" id="notaTarjetas" hidden></p>
+
+      <details class="tabla">
+        <summary id="resumenTabla">📋 Ver matches en tabla</summary>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th><th>Nombre</th><th>Universidad</th><th>Carrera</th>
+                <th>Intereses en común</th><th>Probabilidad</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoTabla"></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+
+    <footer>
+      Modelo <b>RandomForestClassifier</b> (scikit-learn 1.4.0, 100 árboles) + <b>MinMaxScaler</b>
+      serializados desde <code>models/</code> · Datos: <code>data/raw/perfiles_crudos.csv</code>
+      · Misma lógica que <code>app.py</code> (Streamlit).
+    </footer>
+  </main>
+</div>
+
+<script>
+/* ===================== DATOS EMBEBIDOS (generados) ===================== */
+const MODELO    = /*__MODELO__*/null;     // [{l,r,f,t,v} × 100 árboles]
+const ESCALADOR = /*__ESCALADOR__*/null;  // {scale:[4], min:[4]}
+const DATOS     = /*__DATOS__*/null;      // {universidades, carreras, intereses, perfiles}
+
+/* ===================== CONSTANTES (idénticas a app.py) ===================== */
+const UMBRAL = 0.65, TOP_FALLBACK = 5, MIN_I = 3, MAX_I = 5, TARJETAS = 15;
+
+/* ===================== LÓGICA DE PREDICCIÓN ===================== */
+// Sets de intereses por perfil (se precalculan una sola vez)
+const SETS = DATOS.perfiles.map(p => new Set(p[4].split("|")));
+
+/**
+ * Inferencia exacta: replica scaler.transform() + RandomForest.predict_proba()
+ * de scikit-learn (float64 -> float32 -> promedio de hojas, en orden de árbol).
+ */
+function predecir(raw) {
+  const x0 = raw[0] * ESCALADOR.scale[0] + ESCALADOR.min[0];
+  const x1 = raw[1] * ESCALADOR.scale[1] + ESCALADOR.min[1];
+  const x2 = raw[2] * ESCALADOR.scale[2] + ESCALADOR.min[2];
+  const x3 = raw[3] * ESCALADOR.scale[3] + ESCALADOR.min[3];
+  // scikit-learn convierte las features a float32 antes de recorrer los árboles
+  const f0 = Math.fround(x0), f1 = Math.fround(x1), f2 = Math.fround(x2), f3 = Math.fround(x3);
+  let suma = 0;
+  for (let a = 0; a < MODELO.length; a++) {
+    const arbol = MODELO[a];
+    let nodo = 0;
+    while (arbol.f[nodo] !== -2) {                 // -2 = hoja (TREE_LEAF)
+      const val = arbol.f[nodo] === 0 ? f0 : arbol.f[nodo] === 1 ? f1
+               : arbol.f[nodo] === 2 ? f2 : f3;
+      nodo = val <= arbol.t[nodo] ? arbol.l[nodo] : arbol.r[nodo];
+    }
+    suma += arbol.v[nodo][1];                      // P(clase 1) del leaf, tal cual
+  }
+  return suma / MODELO.length;
+}
+
+/** Compara al usuario contra los 2.500 perfiles y devuelve [prob, idx] ordenado. */
+function calcularMatches(uniIdx, carIdx, sel) {
+  const n = sel.length, out = new Array(DATOS.perfiles.length);
+  for (let i = 0; i < DATOS.perfiles.length; i++) {
+    const p = DATOS.perfiles[i], set = SETS[i];
+    let comunes = 0;
+    for (let k = 0; k < n; k++) if (set.has(sel[k])) comunes++;
+    const union = n + set.size - comunes;          // |A ∪ B| = |A| + |B| - |A ∩ B|
+    const raw = [
+      p[2] === uniIdx ? 1 : 0,                     // misma_universidad
+      p[3] === carIdx ? 1 : 0,                     // misma_carrera
+      comunes,                                     // intereses_en_comun
+      comunes / union                              // similitud_jaccard
+    ];
+    out[i] = { i: i, prob: predecir(raw), comunes: comunes };
+  }
+  // De mayor a menor probabilidad; empates desempatados por posición (estable)
+  out.sort((a, b) => b.prob - a.prob || a.i - b.i);
+  return out;
+}
+
+/* ===================== UI ===================== */
+const $ = id => document.getElementById(id);
+let seleccion = new Set();
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+const pct = p => Math.round(p * 100) + "%";
+const miles = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");  // 2500 -> "2.500"
+
+function init() {
+  $("nPerfiles").textContent = miles(DATOS.perfiles.length);
+  // Selects con opciones dinámicas del CSV
+  $("universidad").innerHTML = DATOS.universidades.map((u, i) =>
+    `<option value="${i}">${escapeHtml(u)}</option>`).join("");
+  $("carrera").innerHTML = DATOS.carreras.map((c, i) =>
+    `<option value="${i}">${escapeHtml(c)}</option>`).join("");
+  // Chips de intereses
+  $("chips").innerHTML = DATOS.intereses.map(it =>
+    `<button type="button" class="chip" data-v="${escapeHtml(it)}">${escapeHtml(it)}</button>`).join("");
+  $("chips").addEventListener("click", e => {
+    const b = e.target.closest(".chip");
+    if (!b) return;
+    const v = b.dataset.v;
+    if (seleccion.has(v)) { seleccion.delete(v); b.classList.remove("sel"); }
+    else { seleccion.add(v); b.classList.add("sel"); }
+    const c = $("contador");
+    c.textContent = seleccion.size + "/" + MAX_I;
+    c.classList.toggle("sobra", seleccion.size > MAX_I);
+    $("error").textContent = "";
+  });
+  $("buscar").addEventListener("click", buscar);
+  $("nombre").addEventListener("keydown", e => { if (e.key === "Enter") buscar(); });
+}
+
+function buscar() {
+  const nombre = $("nombre").value.trim();
+  const sel = [...seleccion];
+  const err = $("error");
+  if (!nombre) { err.textContent = "Escribe un nombre para continuar."; return; }
+  if (sel.length < MIN_I || sel.length > MAX_I) {
+    err.textContent = `Debes seleccionar entre ${MIN_I} y ${MAX_I} intereses (llevas ${sel.length}).`;
+    return;
+  }
+  err.textContent = "";
+  $("buscar").disabled = true;
+  setTimeout(() => { try { ejecutar(nombre, sel); } finally { $("buscar").disabled = false; } }, 30);
+}
+
+function ejecutar(nombre, sel) {
+  const uniIdx = +$("universidad").value, carIdx = +$("carrera").value;
+  const todos = calcularMatches(uniIdx, carIdx, sel);
+  const selSet = new Set(sel);
+
+  let matches = todos.filter(r => r.prob >= UMBRAL);
+  const sinMatches = matches.length === 0;
+  if (sinMatches) matches = todos.slice(0, TOP_FALLBACK);
+
+  // --- Métricas ---
+  $("tituloResultados").textContent = `💘 Matches para ${nombre}`;
+  $("mEval").textContent = miles(todos.length);
+  $("mMatches").textContent = sinMatches ? "0" : miles(matches.length);
+  $("mMejor").textContent = pct(todos[0].prob);
+  $("mUmbral").textContent = pct(UMBRAL);
+
+  const aviso = $("avisoFallback");
+  aviso.hidden = !sinMatches;
+  if (sinMatches) {
+    aviso.textContent =
+      `Ningún perfil superó el umbral del ${pct(UMBRAL)}. ` +
+      `A continuación, los ${TOP_FALLBACK} mejores perfiles en orden de probabilidad.`;
+  }
+
+  // --- Tarjetas (top destacados) ---
+  const destacados = matches.slice(0, TARJETAS);
+  $("grid").innerHTML = destacados.map(r => {
+    const p = DATOS.perfiles[r.i], set = SETS[r.i];
+    const comunes = [...set].filter(x => selSet.has(x)).sort();
+    return `
+    <div class="tarjeta">
+      <div class="top">
+        <div>
+          <h3>${escapeHtml(p[1])}</h3>
+          <div class="meta">🎓 ${escapeHtml(DATOS.universidades[p[2]])} · 📚 ${escapeHtml(DATOS.carreras[p[3]])}</div>
+        </div>
+        <div class="pct">${pct(r.prob)}</div>
+      </div>
+      <div class="track"><div class="fill" style="width:${(r.prob * 100).toFixed(1)}%"></div></div>
+      <div class="comunes"><b>Intereses en común (${comunes.length}):</b><br>
+        ${comunes.length ? comunes.map(c => `<code>${escapeHtml(c)}</code>`).join("") : "<i>ninguno</i>"}
+      </div>
+      <div class="perfillist">Intereses del perfil: ${escapeHtml(p[4].split("|").join(" · "))}</div>
+    </div>`;
+  }).join("");
+
+  const nota = $("notaTarjetas");
+  nota.hidden = matches.length <= TARJETAS;
+  if (!nota.hidden) {
+    nota.textContent = `Mostrando las ${TARJETAS} tarjetas destacadas; los ${miles(matches.length)} matches completos están en la tabla.`;
+  }
+
+  // --- Tabla con todos los matches ---
+  $("resumenTabla").textContent = `📋 Ver los ${miles(matches.length)} matches en tabla`;
+  $("cuerpoTabla").innerHTML = matches.map(r => {
+    const p = DATOS.perfiles[r.i], set = SETS[r.i];
+    const comunes = [...set].filter(x => selSet.has(x)).sort().join(", ");
+    return `<tr>
+      <td>${escapeHtml(p[0])}</td>
+      <td>${escapeHtml(p[1])}</td>
+      <td>${escapeHtml(DATOS.universidades[p[2]])}</td>
+      <td>${escapeHtml(DATOS.carreras[p[3]])}</td>
+      <td>${escapeHtml(comunes)}</td>
+      <td class="prob">${(r.prob * 100).toFixed(1)}%</td>
+    </tr>`;
+  }).join("");
+
+  $("inicio").hidden = true;
+  $("resultados").hidden = false;
+  $("resultados").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+init();
+</script>
+</body>
+</html>
