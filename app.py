@@ -44,7 +44,7 @@ TARJETAS_PRINCIPALES = 15  # Nº de tarjetas destacadas (el resto va a la tabla)
 
 st.set_page_config(
     page_title="Gaply · Simulador de Matchmaking",
-    page_icon="💘",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -209,7 +209,7 @@ def pintar_resultados(
     """Muestra los matches en tarjetas (+ tabla completa con todos)."""
     total_evaluados = len(df_todos)
     st.divider()
-    st.subheader(f"💘 Matches para {nombre}")
+    st.subheader(f"Matches para {nombre}")
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Perfiles evaluados", f"{total_evaluados:,}".replace(",", "."))
@@ -273,7 +273,7 @@ def main() -> None:
     df_perfiles, one_hot = cargar_perfiles()
 
     # --- Título principal ---
-    st.title("💘 Gaply · Simulador de Matchmaking")
+    st.title("Gaply · Simulador de Matchmaking")
     st.caption(
         f"Inferencia en vivo sobre **{len(df_perfiles):,}** perfiles con el modelo "
         "Random Forest / Gradient Boosting congelado (Min-Max + predict_proba)."
