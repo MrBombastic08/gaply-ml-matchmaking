@@ -8,8 +8,8 @@ Este repositorio contiene el pipeline completo de Ingeniería de Datos y Entrena
 gaply-ml-matchmaking/
 ├── data/
 │   ├── raw/
-│   │   ├── perfiles_crudos.csv                 # 10,000 perfiles base con distribución homogénea
-│   │   └── pares_interacciones_crudos.csv      # 20,000 pares de interacción antes de normalizar
+│   │   ├── perfiles_crudos.csv                 # 2,500 perfiles base con distribución homogénea
+│   │   └── pares_interacciones_crudos.csv      # 10,000 pares de interacción antes de normalizar
 │   └── processed/
 │       └── dataset_normalizado_balanceado.csv  # Dataset escalado con MinMaxScaler [0.0 - 1.0]
 ├── models/
