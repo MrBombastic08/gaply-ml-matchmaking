@@ -156,7 +156,7 @@
 
   <!-- ===================== RESULTADOS ===================== -->
   <main class="main">
-    <h1>💘 Gaply · Simulador de Matchmaking</h1>
+    <h1> Gaply · Simulador de Matchmaking</h1>
     <p class="sub">
       Inferencia en vivo sobre <b id="nPerfiles">2.500</b> perfiles con el modelo
       <b>Random Forest congelado</b> (Min-Max + predict_proba), ejecutándose
@@ -346,7 +346,7 @@ function ejecutar(nombre, sel) {
   if (sinMatches) matches = todos.slice(0, TOP_FALLBACK);
 
   // --- Métricas ---
-  $("tituloResultados").textContent = `💘 Matches para ${nombre}`;
+  $("tituloResultados").textContent = `Matches para ${nombre}`;
   $("mEval").textContent = miles(todos.length);
   $("mMatches").textContent = sinMatches ? "0" : miles(matches.length);
   $("mMejor").textContent = pct(todos[0].prob);
