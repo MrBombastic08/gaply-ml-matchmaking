@@ -13,7 +13,7 @@ gaply-ml-matchmaking/
 │   │   ├── perfiles_crudos.csv                 # 2,500 perfiles base (4 universidades · 12 carreras · 15 intereses)
 │   │   └── pares_interacciones_crudos.csv      # 10,000 pares con sus 4 features en crudo (5,045 / 4,955)
 │   └── processed/
-│       └── dataset_normalizado_balanceado.csv  # 20,000 filas escaladas con MinMaxScaler a [0.0 - 1.0] (10,028 / 9,972)
+│       └── dataset_normalizado_balanceado.csv  # 10,000 filas escaladas con MinMaxScaler a [0.0 - 1.0] (5,045 / 4,955)
 ├── models/
 │   ├── modelo_matchmaking_gaply.pkl            # Modelo ganador serializado (Random Forest, 100 árboles, profundidad ≤ 6)
 │   └── scaler_normalizador.pkl                 # MinMaxScaler congelado para inferencia en nuevos pares
@@ -23,7 +23,7 @@ gaply-ml-matchmaking/
 │   ├── plantilla_index.html                    # Plantilla del simulador HTML con marcadores de datos
 │   └── exportar_modelo_web.py                  # Exporta modelo/scaler/perfiles, valida paridad y genera index.html
 ├── app.py                                      # Simulador web con Streamlit (formulario lateral + inferencia vectorizada)
-├── index.html                                  # Simulador autocontenido (~412 KB, doble clic, sin Python ni servidor)
+├── index.html                                  # Simulador autocontenido (~403 KB, doble clic, sin Python ni servidor)
 ├── requirements.txt                            # Dependencias fijadas de app.py (local o Streamlit Community Cloud)
 ├── .gitignore
 └── README.md
@@ -68,7 +68,7 @@ El script valida la paridad exacta contra `predict_proba()` de scikit-learn ante
 | :--- | ---: | :--- |
 | `data/raw/perfiles_crudos.csv` | 2,500 | `user_id`, `nombre`, `university`, `career`, `interests` (3–5 valores separados por `\|`), `num_interests` |
 | `data/raw/pares_interacciones_crudos.csv` | 10,000 | Las 4 features en crudo + `is_match` (5,045 negativos / 4,955 positivos) |
-| `data/processed/dataset_normalizado_balanceado.csv` | 20,000 | Las 4 features escaladas a `[0, 1]` + `is_match` (10,028 positivos / 9,972 negativos) |
+| `data/processed/dataset_normalizado_balanceado.csv` | 10,000 | Las 4 features escaladas a `[0, 1]` + `is_match` (4,955 positivos / 5,045 negativos) |
 
 **Distribución de perfiles:** 4 universidades (625 perfiles cada una), 12 carreras y 15 intereses posibles; cada perfil elige entre 3 y 5 de ellos (820 perfiles con 3, 827 con 4 y 853 con 5).
 
@@ -91,7 +91,7 @@ El notebook `notebooks/pipeline_entrenamiento_gaply.ipynb` ejecuta el flujo comp
 
 ## Resultados del Entrenamiento
 
-Métricas sobre el conjunto de prueba (20 %) con `SEMILLA = 42` y partición estratificado, correspondientes al entrenamiento con los datos crudos que genera el notebook (`TARGET_POR_CLASE = 5000` → 10,000 pares):
+Métricas sobre el conjunto de prueba (20 %) con `SEMILLA = 42` y partición estratificada, entrenando sobre `data/processed/dataset_normalizado_balanceado.csv` (10,000 pares que regenera el notebook con `TARGET_POR_CLASE = 5000`):
 
 | Modelo | Accuracy | Precision | Recall | F1-Score |
 | :--- | :---: | :---: | :---: | :---: |
@@ -99,9 +99,7 @@ Métricas sobre el conjunto de prueba (20 %) con `SEMILLA = 42` y partición est
 | **Gradient Boosting** | **0.7725** | **0.7669** | **0.7770** | **0.7719** |
 | **Logistic Regression** | 0.7515 | 0.7300 | 0.7911 | 0.7593 |
 
-Random Forest y Gradient Boosting empatan en las cuatro métricas; el modelo final seleccionado es **Random Forest** (`models/modelo_matchmaking_gaply.pkl`).
-
-> **Nota sobre el modelo publicado:** el `.pkl` actual en `models/` corresponde todavía a la ejecución anterior sobre `dataset_normalizado_balanceado.csv` (20,000 filas), con métricas RF/GB **0.7827** y RL **0.7622**. Al reentrenar con los datos regenerados, el modelo y sus métricas pasan a coincidir con la tabla de arriba.
+Random Forest y Gradient Boosting empatan en las cuatro métricas; el modelo final seleccionado es **Random Forest** (`models/modelo_matchmaking_gaply.pkl`). Estas métricas corresponden exactamente al `.pkl` publicado en el repositorio.
 
 ## Lógica del Simulador
 
