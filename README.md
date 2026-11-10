@@ -32,7 +32,8 @@ gaply-ml-matchmaking/
 
 ### Opción A — `index.html` (local, sin instalar nada)
 
-1. Doble clic en `index.html` (se abre directamente en el navegador, `file://`).
+1. Descargue el repositorio en .Zip y extráigalo 
+3. Busque la carpeta y doble clic en `index.html` (se abre directamente en el navegador, `file://`).
 2. Completa el formulario (nombre, universidad, carrera y 3–5 intereses) y pulsa **🔍 Buscar Matches**.
 
 El modelo `RandomForest` y el `MinMaxScaler` están embebidos en el propio archivo como JSON (100 árboles, profundidad ≤ 6), por lo que las predicciones son **idénticas bit a bit** a las de scikit-learn, sin necesidad de Python, servidor ni conexión a internet.
