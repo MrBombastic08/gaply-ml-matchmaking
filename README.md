@@ -91,13 +91,17 @@ El notebook `notebooks/pipeline_entrenamiento_gaply.ipynb` ejecuta el flujo comp
 
 ## Resultados del Entrenamiento
 
+Métricas sobre el conjunto de prueba (20 %) con `SEMILLA = 42` y partición estratificado, correspondientes al entrenamiento con los datos crudos que genera el notebook (`TARGET_POR_CLASE = 5000` → 10,000 pares):
+
 | Modelo | Accuracy | Precision | Recall | F1-Score |
 | :--- | :---: | :---: | :---: | :---: |
-| **Random Forest** | **0.7827** | **0.7810** | **0.7876** | **0.7843** |
-| **Gradient Boosting** | **0.7827** | **0.7810** | **0.7876** | **0.7843** |
-| **Logistic Regression** | 0.7622 | 0.7459 | 0.7976 | 0.7709 |
+| **Random Forest** | **0.7725** | **0.7669** | **0.7770** | **0.7719** |
+| **Gradient Boosting** | **0.7725** | **0.7669** | **0.7770** | **0.7719** |
+| **Logistic Regression** | 0.7515 | 0.7300 | 0.7911 | 0.7593 |
 
-Random Forest y Gradient Boosting empatan en las cuatro métricas; el modelo final seleccionado fue **Random Forest** (`models/modelo_matchmaking_gaply.pkl`).
+Random Forest y Gradient Boosting empatan en las cuatro métricas; el modelo final seleccionado es **Random Forest** (`models/modelo_matchmaking_gaply.pkl`).
+
+> **Nota sobre el modelo publicado:** el `.pkl` actual en `models/` corresponde todavía a la ejecución anterior sobre `dataset_normalizado_balanceado.csv` (20,000 filas), con métricas RF/GB **0.7827** y RL **0.7622**. Al reentrenar con los datos regenerados, el modelo y sus métricas pasan a coincidir con la tabla de arriba.
 
 ## Lógica del Simulador
 
